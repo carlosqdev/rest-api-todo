@@ -1,10 +1,21 @@
 import { pool } from "../db.js";
 
 export const getTodos = async (req, res) => {
-  try {
-    const [rows] = await pool.query("SELECT id, description, done FROM todos");
+  const { filter } = req.query;
 
-    res.json(rows);
+  try {
+    if (filter?.length > 0) {
+      const [rows] = await pool.query(
+        "SELECT id, description, done FROM todos WHERE done = ?",
+        [filter]
+      );
+      res.json(rows);
+    } else {
+      const [rows] = await pool.query(
+        "SELECT id, description, done FROM todos"
+      );
+      res.json(rows);
+    }
   } catch (error) {
     res.status(500).json({ message: "Something goes wrong", error });
   }
