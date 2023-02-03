@@ -8,9 +8,9 @@ import {
 
 const router = Router()
 
-router.get('/todos', getTodos)
-router.post('/todos', createTodo)
-router.patch('/todos/:id', updateTodo)
-router.delete('/todos/:id', deleteTodo)
+router.get('/tasks', getTodos)
+router.post('/tasks', createTodo)
+router.put('/tasks/:id', updateTodo)
+router.delete('/tasks/:id', deleteTodo)
 
 export default router

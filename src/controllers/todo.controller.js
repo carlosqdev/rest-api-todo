@@ -1,23 +1,18 @@
-import { pool } from '../db.js'
+import { Task } from '../models/Task.js'
 
 export const getTodos = async (req, res) => {
   const { filter } = req.query
 
   try {
     if (filter?.length > 0) {
-      const [rows] = await pool.query(
-        'SELECT id, description, done FROM todos WHERE done = ?',
-        [filter]
-      )
-      res.json(rows)
+      const tasks = await Task.findAll({ where: { done: filter } })
+      res.json(tasks)
     } else {
-      const [rows] = await pool.query(
-        'SELECT id, description, done FROM todos'
-      )
-      res.json(rows)
+      const tasks = await Task.findAll()
+      res.json(tasks)
     }
   } catch (error) {
-    res.status(500).json({ message: 'Something goes wrong', error })
+    res.status(500).json({ message: error.message })
   }
 }
 
@@ -29,58 +24,52 @@ export const createTodo = async (req, res) => {
       throw new Error('Description is required')
     }
 
-    const [result] = await pool.query(
-      'INSERT INTO todos (description, done) values (?, ?)',
-      [description, done]
-    )
-
-    res.json({
-      id: result.insertId,
-      description,
-      done
+    const newTask = await Task.create({
+      description, done
     })
+
+    res.json(newTask)
   } catch (error) {
-    res.status(500).json({ message: 'Something goes wrong', error })
+    res.status(500).json({ message: error.message })
   }
 }
 
 export const updateTodo = async (req, res) => {
   try {
-    const { description, done } = req.body
     const { id } = req.params
+    const { description, done } = req.body
 
-    const [result] = await pool.query(
-      'UPDATE todos SET description = IFNULL(?, description), done = IFNULL(?, done) WHERE id = ?',
-      [description, done, id]
-    )
+    const task = await Task.findByPk(id)
 
-    if (result.affectedRows === 0) {
-      res.status(404).json({ message: 'Not found' })
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' })
     }
 
-    const [rows] = await pool.query(
-      'SELECT id, description, done FROM todos WHERE id = ?',
-      [id]
-    )
+    task.description = description
+    task.done = done
+    await task.save()
 
-    res.json(rows[0])
+    res.json(task)
   } catch (error) {
-    res.status(500).json({ message: 'Something goes wrong', error })
+    res.status(500).json({ message: error.message })
   }
 }
 
 export const deleteTodo = async (req, res) => {
-  const { id } = req.params
-
   try {
-    const [result] = await pool.query('DELETE FROM todos WHERE id = ?', [id])
+    const { id } = req.params
+    const task = await Task.destroy({
+      where: {
+        id
+      }
+    })
 
-    if (result.affectedRows <= 0) {
-      return res.status(404).json({ message: 'Not found' })
+    if (task <= 0) {
+      return res.status(404).json({ message: 'Task not found' })
     }
 
     res.sendStatus(204)
   } catch (error) {
-    res.status(500).json({ message: 'Something goes wrong', error })
+    res.status(500).json({ message: error.message })
   }
 }
